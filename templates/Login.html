@@ -1,0 +1,16 @@
+<html>
+    <body>
+        <form action = "http://localhost:5000/login/try" method = "post">
+            <p>ID : <input type = "text" name = "id"></p>
+            <p>Password : <input type = "text" name = "password"></p>
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <p style="color:#fc6464">{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            <p><input type = "submit" name="login" value=""submit></p>
+        </form>
+    </body>
+</html>
