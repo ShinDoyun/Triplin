@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <p>{{ name[0][0] }} 님의 휴가 목록</p>
+    {% for tuple in tuples %}
+        <p>날짜 : {{ tuple[1] }} 사유 : {{ tuple[2] }} 기간 : {{ tuple[5] }} 유형 : {{ tuple[4] }} 신청일 : {{ tuple[3] }}</p>
+    {% endfor %}
+</body>
+</html>

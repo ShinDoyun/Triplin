@@ -1,91 +1,105 @@
-from flask import Flask, redirect, url_for, render_template, request, json, flash
+from flask import Flask, redirect, url_for, render_template, request, json, flash, session
+import sqlite3
+import time
 
 app = Flask(__name__)
-app.secret_key = 'default value'
-database_path = 'static/database/user_info.json'
+app.secret_key = 'EkNd!&e&Qk%Cj7du'
+user_info_db_path = '/Users/shindoyoon/PycharmProjects/VacationManagerSystem/static/database/user_info_data'
 
 
-@app.route('/login', host="test.localhost.com:5000")
+@app.route('/login')
 def login():
     return render_template('Login.html')
 
 
 @app.route('/login/try', methods=['POST'])
 def try_login():
-    return loginChecking(request.form['triplin_id'], request.form['triplin_password'])
+    return login_checking(request.form['triplin_id'], request.form['triplin_password'], request.form.get('auto_login'))
 
 
-@app.route('/', host="test.localhost.com:5000")
+@app.route('/')
 def root_page():
     if request.cookies.get('cookie_token'):
+        session['uid'] = request.cookies.get('cookie_token')
+
+    if session.get('uid'):
         return redirect(url_for('main'))
+
     return redirect(url_for('login'))
 
 
-@app.route('/sign_up')
-def signup():
-    return '회원가입 페이지'
+@app.route('/logout')
+def logout():
+    resp = redirect(url_for('login'))
+    session.pop('uid', None)
+    resp.set_cookie('cookie_token', expires=0)
+    return resp
 
 
 @app.route('/main')
 def main():
-    uid = request.cookies.get('cookie_token')
-    if str(uid) == 'None':
+    if not session.get('uid'):
         return redirect(url_for('login'))
 
-    user_info_data = open(database_path, 'r').read()
-    user_info_json = json.loads(user_info_data)
-    employee_info = user_info_json['employeesInfo'][uid]
+    user_info_db = sqlite3.connect(user_info_db_path).cursor()
+    user_info_db.execute("SELECT * FROM employees_info WHERE uid='{}'".format(session['uid']))
+    user_info_data = user_info_db.fetchall()
 
-    return_str = "이름 : " + employee_info['name'] + ' 남은 연차 : ' + str(employee_info['annualLeave'])
-
-    return render_template('Main.html', text=return_str)
+    return render_template('Main.html', uid=user_info_data[0][0], name=user_info_data[0][1], nick_name=user_info_data[0][2],
+                           gender=user_info_data[0][3], birth=user_info_data[0][4], phone_number=user_info_data[0][5],
+                           second_contacts=user_info_data[0][6], join_day=user_info_data[0][7], address=user_info_data[0][8]
+                           )
 
 
 @app.route('/vacation')
 def vacation():
-    # 유저 권한에 따라 관리자 or 직원 전용 페이지가 나뉨/Users/shindoyoon/PycharmProjects/VacationManagerSystem/static/jwt.
-    return '휴가 페이지'
+    return render_template('RequestVacationTest.html')
 
 
-@app.route('/vacation/employee')
-def vacation_employee():
-    return '휴가_직원 전용'
+@app.route('/vacation/request', methods=['POST'])
+def vacation_request():
+    request_vacation(request.form['date'], request.form['period'], request.form['reason'], request.form['type'])
+    return redirect(url_for('vacation_mypage'))
 
 
-@app.route('/vacation/employee/my_page')
-def vacation_empoloyee_mypage():
-    return '휴가_직원_마이페이지'
+@app.route('/vacation/my_page')
+def vacation_mypage():
+    user_info_db = sqlite3.connect(user_info_db_path).cursor()
+    user_info_db.execute("SELECT * FROM vacation_list WHERE uid='{}' ORDER BY DATE(vacation_date) ASC LIMIT 10".format(session['uid']))
+    vacation_list_data = user_info_db.fetchall()
+    user_info_db.execute("SELECT name FROM employees_info WHERE uid='{}'".format(session['uid']))
+    name = user_info_db.fetchall()
+    return render_template('MyVacationInfo.html', tuples=vacation_list_data, name=name)
 
 
-@app.route('/vacation.employee/attendance_check')
-def vacation_employee_attendance_check():
-    return '휴가_직원_출근체크'
-
-
-@app.route('/vacation/employee/request_vacation')
-def vacation_employee_vacation():
-    return '휴가_직원_휴가신청'
-
-
-@app.route('/vacation/manager')
+@app.route('/vacation/management')
 def vacation_manager():
     return '휴가_관리자 전용'
 
 
-def loginChecking(id, password):
-    user_info_data = open(database_path, 'r').read()
-    user_info_json = json.loads(user_info_data)
+def login_checking(id, password, auto_login):
+    login_info_db = sqlite3.connect(user_info_db_path).cursor()
+    login_info_db.execute("SELECT * FROM user_login_info WHERE id='{}' AND password='{}'".format(id, password))
+    login_info_data = login_info_db.fetchall()
 
-    if id in user_info_json['loginInfo']:
-        if user_info_json['loginInfo'][id]['password'] == password:
-            resp = redirect(url_for('main'))
-            resp.set_cookie('cookie_token', user_info_json['loginInfo'][id]['uid'])
-            return resp
-
-    flash('ID or Password is Not Available')
+    if len(login_info_data) == 1:
+        session['uid'] = login_info_data[0][0]
+        resp = redirect(url_for('main'))
+        if auto_login:
+            resp.set_cookie('cookie_token', session['uid'])
+        return resp
+    elif len(login_info_data) >= 2:
+        flash("IT'S DATABASE ERROR!!!! PLEASE CALL TORRES !!")
+    else:
+        flash('ID or Password is Not Available')
     return redirect(url_for('login'))
 
+
+def request_vacation(date, period, reason, type):
+    user_info_db = sqlite3.connect(user_info_db_path)
+    user_info_db.cursor().execute("INSERT INTO vacation_list VALUES('{}', '{}', '{}', '{}', '{}', {})".
+                                  format(session['uid'], date, reason, time.strftime('%c'), type, period))
+    user_info_db.commit()
 
 if __name__ == '__main__':
     app.run()

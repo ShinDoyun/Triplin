@@ -1,13 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <title>main</title>
 </head>
 <body>
-    {{ text }}<br>
-    <form action="http://localhost:5000/">
+    uid : {{ uid }}<br>
+    이름 : {{ name }} <br>
+    별명 : {{ nick_name }} <br>
+    성별 : {{ gender }} <br>
+    생일 : {{ birth }} <br>
+    번호 : {{ phone_number }} <br>
+    2차 연락망 : {{ second_contacts }} <br>
+    입사일 : {{ join_day }} <br>
+    주소 : {{ address }} <br>
+    <form action="http://localhost:5000/logout">
         <input type = "submit" name="logout" value="Logout">
+    </form>
+    <form action="http://localhost:5000/vacation">
+        <input type = "submit" name="vacation_page", value="휴가페이지">
     </form>
 </body>
 </html>

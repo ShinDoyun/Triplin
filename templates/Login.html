@@ -1,4 +1,7 @@
 <html>
+    <head>
+        <meta charset="UTF-8">
+    </head>
     <body>
         <form action = "http://localhost:5000/login/try" method = "post">
             <p>ID : <input type = "text" name = "triplin_id"></p>
@@ -10,6 +13,7 @@
                     {% endfor %}
                 {% endif %}
             {% endwith %}
+            <p>자동로그인 <input type="checkbox" name="auto_login">&nbsp 관리자로그인 <input type="checkbox" name="admin_login"></p>
             <p><input type = "submit" name="login" value="Login"></p>
         </form>
     </body>
